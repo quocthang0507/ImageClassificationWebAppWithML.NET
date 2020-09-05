@@ -171,6 +171,11 @@ namespace ImageClassification.Train
             => FileUtils.LoadImagesFromDirectory(folder, useFolderNameAsLabel)
                 .Select(x => new ImageData(x.imagePath, x.label));
 
+        /// <summary>
+        /// Download dataset and return file name
+        /// </summary>
+        /// <param name="imagesDownloadFolder"></param>
+        /// <returns></returns>
         public static string DownloadImageSet(string imagesDownloadFolder)
         {
             // get a set of images to teach the network about the new classes
