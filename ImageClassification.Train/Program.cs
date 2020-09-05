@@ -4,8 +4,10 @@ using Microsoft.ML;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Text;
 using static Microsoft.ML.Transforms.ValueToKeyMappingEstimator;
 
 namespace ImageClassification.Train
@@ -14,6 +16,8 @@ namespace ImageClassification.Train
     {
         static void Main()
         {
+            Console.OutputEncoding = Encoding.UTF8;
+
             string outputMlNetModelFilePath, imagesFolderPathForPredictions, fullImagesetFolderPath;
 
             //DownloadDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
@@ -154,14 +158,15 @@ namespace ImageClassification.Train
             var testImages = FileUtils.LoadInMemoryImagesFromDirectory(
                 imagesFolderPathForPredictions, false);
 
-            var imageToPredict = testImages.First();
+            foreach (var imageToPredict in testImages)
+            {
+                var prediction = predictionEngine.Predict(imageToPredict);
 
-            var prediction = predictionEngine.Predict(imageToPredict);
-
-            Console.WriteLine(
-                $"Image Filename : [{imageToPredict.ImageFileName}], " +
-                $"Scores : [{string.Join(",", prediction.Score)}], " +
-                $"Predicted Label : {prediction.PredictedLabel}");
+                Console.WriteLine(
+                    $"Image Filename : [{imageToPredict.ImageFileName}], " +
+                    $"Scores : [{string.Join(",", prediction.Score)}], " +
+                    $"Predicted Label : {prediction.PredictedLabel}");
+            }
         }
 
 
