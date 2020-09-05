@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Folder Include="assets\inputs\images\" />
+    <Folder Include="custom-assets\outputs\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,12 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="assets\inputs\images-for-predictions\FlowersForPredictions\StrangeBlackRose.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="assets\inputs\images-for-predictions\FlowersForPredictions\RareThreeSpiralledRose.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="assets\inputs\images-for-predictions\gamer_chair_01.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

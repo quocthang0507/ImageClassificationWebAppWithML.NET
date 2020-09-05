@@ -14,17 +14,10 @@ namespace ImageClassification.Train
     {
         static void Main()
         {
-            const string assetsRelativePath = @"../../../assets";
-            string assetsPath = GetAbsolutePath(assetsRelativePath);
+            string outputMlNetModelFilePath, imagesFolderPathForPredictions, fullImagesetFolderPath;
 
-            string outputMlNetModelFilePath = Path.Combine(assetsPath, "outputs", "imageClassifier.zip");
-            string imagesFolderPathForPredictions = Path.Combine(assetsPath, "inputs", "images-for-predictions", "FlowersForPredictions");
-
-            string imagesDownloadFolderPath = Path.Combine(assetsPath, "inputs", "images");
-
-            // 1. Download the image set and unzip
-            string finalImagesFolderName = DownloadImageSet(imagesDownloadFolderPath);
-            string fullImagesetFolderPath = Path.Combine(imagesDownloadFolderPath, finalImagesFolderName);
+            //DownloadDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
+            UseLocalDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
 
             var mlContext = new MLContext(seed: 1);
 
@@ -109,6 +102,30 @@ namespace ImageClassification.Train
             Console.WriteLine("Press any key to finish");
             Console.ReadKey();
         }
+
+        private static void DownloadDataset(out string outputMlNetModelFilePath, out string imagesFolderPathForPredictions, out string fullImagesetFolderPath)
+        {
+            const string assetsRelativePath = @"../../../assets";
+            string assetsPath = GetAbsolutePath(assetsRelativePath);
+
+            outputMlNetModelFilePath = Path.Combine(assetsPath, "outputs", "imageClassifier.zip");
+            imagesFolderPathForPredictions = Path.Combine(assetsPath, "inputs", "images-for-predictions", "FlowersForPredictions");
+            string imagesDownloadFolderPath = Path.Combine(assetsPath, "inputs", "images");
+
+            // 1. Download the image set and unzip
+            string finalImagesFolderName = DownloadImageSet(imagesDownloadFolderPath);
+            fullImagesetFolderPath = Path.Combine(imagesDownloadFolderPath, finalImagesFolderName);
+        }
+
+        private static void UseLocalDataset(out string outputMlNetModelFilePath, out string imagesFolderPathForPredictions, out string fullImagesetFolderPath)
+        {
+            const string assetsRelativePath = @"../../../custom-assets";
+            string assetsPath = GetAbsolutePath(assetsRelativePath);
+            outputMlNetModelFilePath = Path.Combine(assetsPath, "outputs", "imageClassifier.zip");
+            imagesFolderPathForPredictions = Path.Combine(assetsPath, "inputs", "predictions");
+            fullImagesetFolderPath = Path.Combine(assetsPath, "inputs", "img");
+        }
+
 
         private static void EvaluateModel(MLContext mlContext, IDataView testDataset, ITransformer trainedModel)
         {
