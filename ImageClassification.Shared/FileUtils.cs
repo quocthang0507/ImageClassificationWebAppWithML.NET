@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using ImageClassification.DataModels;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using ImageClassification.DataModels;
 
 namespace ImageClassification
 {

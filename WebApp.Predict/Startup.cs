@@ -1,4 +1,4 @@
-using System.IO;
+using ImageClassification.DataModels;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -6,17 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.ML;
-using Microsoft.ML;
-using ImageClassification.WebApp.ML.DataModels;
-using ImageClassification.DataModels;
-using Microsoft.Extensions.Options;
-using System.Drawing;
-using TensorFlowImageClassification.Controllers;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http.Internal;
-using System.Threading.Tasks;
-using System;
-using System.Threading;
+using System.IO;
 
 namespace ImageClassification.WebApp
 {

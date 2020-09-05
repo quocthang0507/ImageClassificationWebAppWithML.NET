@@ -1,19 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using ImageClassification;
+using ImageClassification.DataModels;
+using ImageClassification.WebApp;
+using ImageClassification.WebApp.ImageHelpers;
+using ImageClassification.WebApp.ML.DataModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ML;
-using ImageClassification.WebApp;
-using ImageClassification.WebApp.ImageHelpers;
-using ImageClassification.WebApp.ML.DataModels;
-using ImageClassification.DataModels;
-using ImageClassification;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace TensorFlowImageClassification.Controllers
 {
@@ -72,7 +70,7 @@ namespace TensorFlowImageClassification.Controllers
             // Predict the image's label (The one with highest probability).
             var imageBestLabelPrediction =
                 new ImagePredictedLabelWithProbability
-                {  
+                {
                     PredictedLabel = prediction.PredictedLabel,
                     Probability = prediction.Score.Max(),
                     PredictionExecutionTime = elapsedMs,

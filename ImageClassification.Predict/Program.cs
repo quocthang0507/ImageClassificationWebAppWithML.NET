@@ -1,9 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using ImageClassification.DataModels;
+﻿using ImageClassification.DataModels;
 using Microsoft.ML;
 using Microsoft.ML.Data;
+using System;
+using System.IO;
+using System.Linq;
 
 namespace ImageClassification.Predict
 {

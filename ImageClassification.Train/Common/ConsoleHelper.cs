@@ -1,10 +1,10 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
+﻿using Microsoft.ML;
 using Microsoft.ML.Data;
-using Microsoft.ML;
-using static Microsoft.ML.TrainCatalogBase;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using static Microsoft.ML.TrainCatalogBase;
 
 namespace Common
 {
@@ -83,7 +83,7 @@ namespace Common
             }
             Console.WriteLine($"************************************************************");
         }
-       
+
         public static void PrintRegressionFoldsAverageMetrics(string algorithmName, IReadOnlyList<CrossValidationResult<RegressionMetrics>> crossValidationResults)
         {
             var L1 = crossValidationResults.Select(r => r.Metrics.MeanAbsoluteError);
@@ -141,17 +141,17 @@ namespace Common
 
         }
 
-        public static double CalculateStandardDeviation (IEnumerable<double> values)
+        public static double CalculateStandardDeviation(IEnumerable<double> values)
         {
             double average = values.Average();
             double sumOfSquaresOfDifferences = values.Select(val => (val - average) * (val - average)).Sum();
-            double standardDeviation = Math.Sqrt(sumOfSquaresOfDifferences / (values.Count()-1));
+            double standardDeviation = Math.Sqrt(sumOfSquaresOfDifferences / (values.Count() - 1));
             return standardDeviation;
         }
 
         public static double CalculateConfidenceInterval95(IEnumerable<double> values)
         {
-            double confidenceInterval95 = 1.96 * CalculateStandardDeviation(values) / Math.Sqrt((values.Count()-1));
+            double confidenceInterval95 = 1.96 * CalculateStandardDeviation(values) / Math.Sqrt((values.Count() - 1));
             return confidenceInterval95;
         }
 
@@ -216,7 +216,7 @@ namespace Common
         // This method using 'DebuggerExtensions.Preview()' should only be used when debugging/developing, not for release/production trainings
         public static void PeekVectorColumnDataInConsole(MLContext mlContext, string columnName, IDataView dataView, IEstimator<ITransformer> pipeline, int numberOfRows = 4)
         {
-            string msg = string.Format("Peek data in DataView: : Show {0} rows with just the '{1}' column", numberOfRows, columnName );
+            string msg = string.Format("Peek data in DataView: : Show {0} rows with just the '{1}' column", numberOfRows, columnName);
             ConsoleWriteHeader(msg);
 
             var transformer = pipeline.Fit(dataView);
@@ -229,20 +229,21 @@ namespace Common
             // print to console the peeked rows
 
             int currentRow = 0;
-            someColumnData.ForEach(row => {
-                                            currentRow++;
-                                            String concatColumn = String.Empty;
-                                            foreach (float f in row)
-                                            {
-                                                concatColumn += f.ToString();                                              
-                                            }
+            someColumnData.ForEach(row =>
+            {
+                currentRow++;
+                String concatColumn = String.Empty;
+                foreach (float f in row)
+                {
+                    concatColumn += f.ToString();
+                }
 
-                                            Console.WriteLine();
-                                            string rowMsg = string.Format("**** Row {0} with '{1}' field value ****", currentRow, columnName);
-                                            Console.WriteLine(rowMsg);
-                                            Console.WriteLine(concatColumn);
-                                            Console.WriteLine();
-                                          });
+                Console.WriteLine();
+                string rowMsg = string.Format("**** Row {0} with '{1}' field value ****", currentRow, columnName);
+                Console.WriteLine(rowMsg);
+                Console.WriteLine(concatColumn);
+                Console.WriteLine();
+            });
         }
 
         public static void ConsoleWriteHeader(params string[] lines)
