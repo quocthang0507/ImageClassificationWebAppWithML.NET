@@ -14,9 +14,9 @@ namespace ImageClassification.Predict
             const string assetsRelativePath = @"../../../assets";
             var assetsPath = GetAbsolutePath(assetsRelativePath);
             // Please copy the ML Model in Train Project to here and change below paths
-            var imagesFolderPathForPredictions = Path.Combine(assetsPath, "inputs", "images-for-predictions");
+            var imagesFolderPathForPredictions = Path.Combine(assetsPath, "inputs", "predictions");
 
-            var imageClassifierModelZipFilePath = Path.Combine(assetsPath, "inputs", "MLNETModel", "imageClassifier.zip");
+            var imageClassifierModelZipFilePath = Path.Combine(assetsPath, "inputs", "model", "imageClassifier.zip");
 
             try
             {
