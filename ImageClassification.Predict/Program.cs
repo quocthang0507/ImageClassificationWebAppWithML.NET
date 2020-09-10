@@ -4,6 +4,7 @@ using Microsoft.ML.Data;
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace ImageClassification.Predict
 {
@@ -11,6 +12,8 @@ namespace ImageClassification.Predict
     {
         private static void Main()
         {
+            Console.OutputEncoding = Encoding.UTF8;
+
             const string assetsRelativePath = @"../../../assets";
             var assetsPath = GetAbsolutePath(assetsRelativePath);
             // Please copy the ML Model in Train Project to here and change below paths
