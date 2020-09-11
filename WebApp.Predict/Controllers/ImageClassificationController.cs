@@ -21,7 +21,7 @@ namespace TensorFlowImageClassification.Controllers
     {
         public IConfiguration Configuration { get; }
         private readonly PredictionEnginePool<InMemoryImageData, ImagePrediction> _predictionEnginePool;
-        private readonly ILogger<ImageClassification> _logger;
+        private readonly ILogger<ImageClassificationController> _logger;
 
         public ImageClassificationController(PredictionEnginePool<InMemoryImageData, ImagePrediction> predictionEnginePool, IConfiguration configuration, ILogger<ImageClassificationController> logger) //When using DI/IoC
         {
