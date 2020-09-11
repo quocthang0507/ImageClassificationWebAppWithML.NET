@@ -23,7 +23,7 @@ namespace ImageClassification.WebApp
         [System.Obsolete]
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc(options => options.EnableEndpointRouting = false);
+            //services.AddMvc(options => options.EnableEndpointRouting = false);
 
             services.Configure<CookiePolicyOptions>(options =>
             {
@@ -32,7 +32,7 @@ namespace ImageClassification.WebApp
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             /////////////////////////////////////////////////////////////////////////////
             // Register the PredictionEnginePool as a service in the IoC container for DI.
