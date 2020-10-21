@@ -51,6 +51,13 @@ namespace TensorFlowImageClassification.Controllers
             if (!imageData.IsValidImage())
                 return StatusCode(StatusCodes.Status415UnsupportedMediaType);
 
+            var ext = ImageValidationExtensions.GetImageFormat(imageData) == ImageValidationExtensions.ImageFormat.jpeg ? ".jpg" : ".png";
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\img", Path.GetRandomFileName().Split('.')[0] + ext);
+            using (var stream = System.IO.File.Create(filePath))
+            {
+                await imageFile.CopyToAsync(stream);
+            }
+
             _logger.LogInformation("Start processing image...");
 
             // Measure execution time.
