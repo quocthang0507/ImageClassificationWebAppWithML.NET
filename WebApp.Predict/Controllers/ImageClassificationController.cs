@@ -53,9 +53,16 @@ namespace TensorFlowImageClassification.Controllers
 
             var ext = ImageValidationExtensions.GetImageFormat(imageData) == ImageValidationExtensions.ImageFormat.jpeg ? ".jpg" : ".png";
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\img", Path.GetRandomFileName().Split('.')[0] + ext);
+            /*
             using (var stream = System.IO.File.Create(filePath))
             {
                 await imageFile.CopyToAsync(stream);
+            }
+            */
+
+            using (FileStream stream = new FileStream(filePath, FileMode.Create))
+            {
+                await stream.WriteAsync(imageData);
             }
 
             _logger.LogInformation("Start processing image...");
