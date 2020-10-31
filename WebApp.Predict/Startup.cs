@@ -69,8 +69,8 @@ namespace ImageClassification.WebApp
         public static void WarmUpPredictionEnginePool(IServiceCollection services)
         {
             //#1 - Simply get a Prediction Engine
-            var predictionEnginePool = services.BuildServiceProvider().GetRequiredService<PredictionEnginePool<InMemoryImageData, ImagePrediction>>();
-            var predictionEngine = predictionEnginePool.GetPredictionEngine();
+            PredictionEnginePool<InMemoryImageData, ImagePrediction> predictionEnginePool = services.BuildServiceProvider().GetRequiredService<PredictionEnginePool<InMemoryImageData, ImagePrediction>>();
+            Microsoft.ML.PredictionEngine<InMemoryImageData, ImagePrediction> predictionEngine = predictionEnginePool.GetPredictionEngine();
             predictionEnginePool.ReturnPredictionEngine(predictionEngine);
 
             // #2 - Predict
@@ -103,7 +103,7 @@ namespace ImageClassification.WebApp
 
         public static string GetAbsolutePath(string relativePath)
         {
-            var _dataRoot = new FileInfo(typeof(Program).Assembly.Location);
+            FileInfo _dataRoot = new FileInfo(typeof(Program).Assembly.Location);
             string assemblyFolderPath = _dataRoot.Directory.FullName;
 
             string fullPath = Path.Combine(assemblyFolderPath, relativePath);

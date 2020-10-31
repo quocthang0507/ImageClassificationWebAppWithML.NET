@@ -76,7 +76,7 @@ namespace Common
             Console.WriteLine($"    LogLoss = {metrics.LogLoss:0.####}, the closer to 0, the better");
 
             int i = 0;
-            foreach (var classLogLoss in metrics.PerClassLogLoss)
+            foreach (double classLogLoss in metrics.PerClassLogLoss)
             {
                 i++;
                 Console.WriteLine($"    LogLoss for class {i} = {classLogLoss:0.####}, the closer to 0, the better");
@@ -86,11 +86,11 @@ namespace Common
 
         public static void PrintRegressionFoldsAverageMetrics(string algorithmName, IReadOnlyList<CrossValidationResult<RegressionMetrics>> crossValidationResults)
         {
-            var L1 = crossValidationResults.Select(r => r.Metrics.MeanAbsoluteError);
-            var L2 = crossValidationResults.Select(r => r.Metrics.MeanSquaredError);
-            var RMS = crossValidationResults.Select(r => r.Metrics.RootMeanSquaredError);
-            var lossFunction = crossValidationResults.Select(r => r.Metrics.LossFunction);
-            var R2 = crossValidationResults.Select(r => r.Metrics.RSquared);
+            IEnumerable<double> L1 = crossValidationResults.Select(r => r.Metrics.MeanAbsoluteError);
+            IEnumerable<double> L2 = crossValidationResults.Select(r => r.Metrics.MeanSquaredError);
+            IEnumerable<double> RMS = crossValidationResults.Select(r => r.Metrics.RootMeanSquaredError);
+            IEnumerable<double> lossFunction = crossValidationResults.Select(r => r.Metrics.LossFunction);
+            IEnumerable<double> R2 = crossValidationResults.Select(r => r.Metrics.RSquared);
 
             Console.WriteLine($"*************************************************************************************************************");
             Console.WriteLine($"*       Metrics for {algorithmName} Regression model      ");
@@ -108,27 +108,27 @@ namespace Common
                                        IReadOnlyList<CrossValidationResult<MulticlassClassificationMetrics>> crossValResults
                                                                            )
         {
-            var metricsInMultipleFolds = crossValResults.Select(r => r.Metrics);
+            IEnumerable<MulticlassClassificationMetrics> metricsInMultipleFolds = crossValResults.Select(r => r.Metrics);
 
-            var microAccuracyValues = metricsInMultipleFolds.Select(m => m.MicroAccuracy);
-            var microAccuracyAverage = microAccuracyValues.Average();
-            var microAccuraciesStdDeviation = CalculateStandardDeviation(microAccuracyValues);
-            var microAccuraciesConfidenceInterval95 = CalculateConfidenceInterval95(microAccuracyValues);
+            IEnumerable<double> microAccuracyValues = metricsInMultipleFolds.Select(m => m.MicroAccuracy);
+            double microAccuracyAverage = microAccuracyValues.Average();
+            double microAccuraciesStdDeviation = CalculateStandardDeviation(microAccuracyValues);
+            double microAccuraciesConfidenceInterval95 = CalculateConfidenceInterval95(microAccuracyValues);
 
-            var macroAccuracyValues = metricsInMultipleFolds.Select(m => m.MacroAccuracy);
-            var macroAccuracyAverage = macroAccuracyValues.Average();
-            var macroAccuraciesStdDeviation = CalculateStandardDeviation(macroAccuracyValues);
-            var macroAccuraciesConfidenceInterval95 = CalculateConfidenceInterval95(macroAccuracyValues);
+            IEnumerable<double> macroAccuracyValues = metricsInMultipleFolds.Select(m => m.MacroAccuracy);
+            double macroAccuracyAverage = macroAccuracyValues.Average();
+            double macroAccuraciesStdDeviation = CalculateStandardDeviation(macroAccuracyValues);
+            double macroAccuraciesConfidenceInterval95 = CalculateConfidenceInterval95(macroAccuracyValues);
 
-            var logLossValues = metricsInMultipleFolds.Select(m => m.LogLoss);
-            var logLossAverage = logLossValues.Average();
-            var logLossStdDeviation = CalculateStandardDeviation(logLossValues);
-            var logLossConfidenceInterval95 = CalculateConfidenceInterval95(logLossValues);
+            IEnumerable<double> logLossValues = metricsInMultipleFolds.Select(m => m.LogLoss);
+            double logLossAverage = logLossValues.Average();
+            double logLossStdDeviation = CalculateStandardDeviation(logLossValues);
+            double logLossConfidenceInterval95 = CalculateConfidenceInterval95(logLossValues);
 
-            var logLossReductionValues = metricsInMultipleFolds.Select(m => m.LogLossReduction);
-            var logLossReductionAverage = logLossReductionValues.Average();
-            var logLossReductionStdDeviation = CalculateStandardDeviation(logLossReductionValues);
-            var logLossReductionConfidenceInterval95 = CalculateConfidenceInterval95(logLossReductionValues);
+            IEnumerable<double> logLossReductionValues = metricsInMultipleFolds.Select(m => m.LogLossReduction);
+            double logLossReductionAverage = logLossReductionValues.Average();
+            double logLossReductionStdDeviation = CalculateStandardDeviation(logLossReductionValues);
+            double logLossReductionConfidenceInterval95 = CalculateConfidenceInterval95(logLossReductionValues);
 
             Console.WriteLine($"*************************************************************************************************************");
             Console.WriteLine($"*       Metrics for {algorithmName} Multi-class Classification model      ");
@@ -170,11 +170,11 @@ namespace Common
             string msg = string.Format("Show data in DataView: Showing {0} rows with the columns", numberOfRows.ToString());
             ConsoleWriteHeader(msg);
 
-            var preViewTransformedData = dataView.Preview(maxRows: numberOfRows);
+            DataDebuggerPreview preViewTransformedData = dataView.Preview(maxRows: numberOfRows);
 
-            foreach (var row in preViewTransformedData.RowView)
+            foreach (DataDebuggerPreview.RowInfo row in preViewTransformedData.RowView)
             {
-                var ColumnCollection = row.Values;
+                KeyValuePair<string, object>[] ColumnCollection = row.Values;
                 string lineToPrint = "Row--> ";
                 foreach (KeyValuePair<string, object> column in ColumnCollection)
                 {
@@ -192,17 +192,17 @@ namespace Common
             ConsoleWriteHeader(msg);
 
             //https://github.com/dotnet/machinelearning/blob/master/docs/code/MlNetCookBook.md#how-do-i-look-at-the-intermediate-data
-            var transformer = pipeline.Fit(dataView);
-            var transformedData = transformer.Transform(dataView);
+            ITransformer transformer = pipeline.Fit(dataView);
+            IDataView transformedData = transformer.Transform(dataView);
 
             // 'transformedData' is a 'promise' of data, lazy-loading. call Preview  
             //and iterate through the returned collection from preview.
 
-            var preViewTransformedData = transformedData.Preview(maxRows: numberOfRows);
+            DataDebuggerPreview preViewTransformedData = transformedData.Preview(maxRows: numberOfRows);
 
-            foreach (var row in preViewTransformedData.RowView)
+            foreach (DataDebuggerPreview.RowInfo row in preViewTransformedData.RowView)
             {
-                var ColumnCollection = row.Values;
+                KeyValuePair<string, object>[] ColumnCollection = row.Values;
                 string lineToPrint = "Row--> ";
                 foreach (KeyValuePair<string, object> column in ColumnCollection)
                 {
@@ -219,11 +219,11 @@ namespace Common
             string msg = string.Format("Peek data in DataView: : Show {0} rows with just the '{1}' column", numberOfRows, columnName);
             ConsoleWriteHeader(msg);
 
-            var transformer = pipeline.Fit(dataView);
-            var transformedData = transformer.Transform(dataView);
+            ITransformer transformer = pipeline.Fit(dataView);
+            IDataView transformedData = transformer.Transform(dataView);
 
             // Extract the 'Features' column.
-            var someColumnData = transformedData.GetColumn<float[]>(columnName)
+            List<float[]> someColumnData = transformedData.GetColumn<float[]>(columnName)
                                                         .Take(numberOfRows).ToList();
 
             // print to console the peeked rows
@@ -248,35 +248,35 @@ namespace Common
 
         public static void ConsoleWriteHeader(params string[] lines)
         {
-            var defaultColor = Console.ForegroundColor;
+            ConsoleColor defaultColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine(" ");
-            foreach (var line in lines)
+            foreach (string line in lines)
             {
                 Console.WriteLine(line);
             }
-            var maxLength = lines.Select(x => x.Length).Max();
+            int maxLength = lines.Select(x => x.Length).Max();
             Console.WriteLine(new string('#', maxLength));
             Console.ForegroundColor = defaultColor;
         }
 
         public static void ConsoleWriterSection(params string[] lines)
         {
-            var defaultColor = Console.ForegroundColor;
+            ConsoleColor defaultColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine(" ");
-            foreach (var line in lines)
+            foreach (string line in lines)
             {
                 Console.WriteLine(line);
             }
-            var maxLength = lines.Select(x => x.Length).Max();
+            int maxLength = lines.Select(x => x.Length).Max();
             Console.WriteLine(new string('-', maxLength));
             Console.ForegroundColor = defaultColor;
         }
 
         public static void ConsolePressAnyKey()
         {
-            var defaultColor = Console.ForegroundColor;
+            ConsoleColor defaultColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(" ");
             Console.WriteLine("Press any key to finish.");
@@ -285,14 +285,14 @@ namespace Common
 
         public static void ConsoleWriteException(params string[] lines)
         {
-            var defaultColor = Console.ForegroundColor;
+            ConsoleColor defaultColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
             const string exceptionTitle = "EXCEPTION";
             Console.WriteLine(" ");
             Console.WriteLine(exceptionTitle);
             Console.WriteLine(new string('#', exceptionTitle.Length));
             Console.ForegroundColor = defaultColor;
-            foreach (var line in lines)
+            foreach (string line in lines)
             {
                 Console.WriteLine(line);
             }
@@ -300,14 +300,14 @@ namespace Common
 
         public static void ConsoleWriteWarning(params string[] lines)
         {
-            var defaultColor = Console.ForegroundColor;
+            ConsoleColor defaultColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkMagenta;
             const string warningTitle = "WARNING";
             Console.WriteLine(" ");
             Console.WriteLine(warningTitle);
             Console.WriteLine(new string('#', warningTitle.Length));
             Console.ForegroundColor = defaultColor;
-            foreach (var line in lines)
+            foreach (string line in lines)
             {
                 Console.WriteLine(line);
             }

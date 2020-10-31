@@ -12,7 +12,7 @@ namespace ImageClassification
             string folder,
             bool useFolderNameasLabel)
         {
-            var imagesPath = Directory
+            IEnumerable<string> imagesPath = Directory
                 .GetFiles(folder, "*", searchOption: SearchOption.AllDirectories)
                 .Where(x => Path.GetExtension(x) == ".jpg" || Path.GetExtension(x) == ".png");
 
@@ -20,8 +20,8 @@ namespace ImageClassification
                 ? imagesPath.Select(imagePath => (imagePath, Directory.GetParent(imagePath).Name))
                 : imagesPath.Select(imagePath =>
                 {
-                    var label = Path.GetFileName(imagePath);
-                    for (var index = 0; index < label.Length; index++)
+                    string label = Path.GetFileName(imagePath);
+                    for (int index = 0; index < label.Length; index++)
                     {
                         if (!char.IsLetter(label[index]))
                         {
@@ -44,7 +44,7 @@ namespace ImageClassification
 
         public static string GetAbsolutePath(Assembly assembly, string relativePath)
         {
-            var assemblyFolderPath = new FileInfo(assembly.Location).Directory.FullName;
+            string assemblyFolderPath = new FileInfo(assembly.Location).Directory.FullName;
 
             return Path.Combine(assemblyFolderPath, relativePath);
         }

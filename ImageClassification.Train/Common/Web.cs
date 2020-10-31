@@ -24,9 +24,9 @@ namespace Common
                 return false;
             }
 
-            var wc = new WebClient();
+            WebClient wc = new WebClient();
             Console.WriteLine($"Downloading {relativeFilePath}");
-            var download = Task.Run(() => wc.DownloadFile(url, relativeFilePath));
+            Task download = Task.Run(() => wc.DownloadFile(url, relativeFilePath));
             while (!download.IsCompleted)
             {
                 Thread.Sleep(1000);

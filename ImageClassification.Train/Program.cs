@@ -3,6 +3,7 @@ using ImageClassification.DataModels;
 using Microsoft.ML;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace ImageClassification.Train
             //DownloadDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
             UseLocalDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
 
-            var mlContext = new MLContext(seed: 1);
+            MLContext mlContext = new MLContext(seed: 1);
 
             // Specify MLContext Filter to only show feedback log/traces about ImageClassification
             // This is not needed for feedback output if using the explicit MetricsCallback parameter
@@ -43,14 +44,16 @@ namespace ImageClassification.Train
                 .Fit(shuffledFullImageFilePathsDataset)
                 .Transform(shuffledFullImageFilePathsDataset);
 
+            int size = GetSizeIDataView(shuffledFullImagesDataset);
+
             // 4. Split the data 80:20 into train and test sets, train and evaluate.
-            var trainTestData = mlContext.Data.TrainTestSplit(shuffledFullImagesDataset, testFraction: 0.2);
+            DataOperationsCatalog.TrainTestData trainTestData = mlContext.Data.TrainTestSplit(shuffledFullImagesDataset, testFraction: 0.2);
             IDataView trainDataView = trainTestData.TrainSet;
             IDataView testDataView = trainTestData.TestSet;
 
             // 5. Define the model's training pipeline using DNN default values
             //
-            var pipeline = mlContext.MulticlassClassification.Trainers
+            Microsoft.ML.Data.EstimatorChain<Microsoft.ML.Transforms.KeyToValueMappingTransformer> pipeline = mlContext.MulticlassClassification.Trainers
                     .ImageClassification(featureColumnName: "Image",
                                          labelColumnName: "LabelAsKey",
                                          validationSet: testDataView)
@@ -82,13 +85,13 @@ namespace ImageClassification.Train
             Console.WriteLine("*** Training the image classification model with DNN Transfer Learning on top of the selected pre-trained model/architecture ***");
 
             // Measuring training time
-            var watch = Stopwatch.StartNew();
+            Stopwatch watch = Stopwatch.StartNew();
 
             //Train
             ITransformer trainedModel = pipeline.Fit(trainDataView);
 
             watch.Stop();
-            var elapsedMs = watch.ElapsedMilliseconds;
+            long elapsedMs = watch.ElapsedMilliseconds;
 
             Console.WriteLine($"Training with transfer learning took: {elapsedMs / 1000} seconds");
 
@@ -104,6 +107,20 @@ namespace ImageClassification.Train
 
             Console.WriteLine("Press any key to finish");
             Console.ReadKey();
+        }
+
+        private static int GetSizeIDataView(IDataView idv)
+        {
+            var schema = idv.Schema;
+            int rows = 0;
+            using (var cursor = idv.GetRowCursor(schema))
+            {
+                while (cursor.MoveNext())
+                {
+                    rows++;
+                }
+            }
+            return rows;
         }
 
         private static void DownloadDataset(out string outputMlNetModelFilePath, out string imagesFolderPathForPredictions, out string fullImagesetFolderPath)
@@ -135,15 +152,15 @@ namespace ImageClassification.Train
             Console.WriteLine("Making predictions in bulk for evaluating model's quality...");
 
             // Measuring time
-            var watch = Stopwatch.StartNew();
+            Stopwatch watch = Stopwatch.StartNew();
 
-            var predictionsDataView = trainedModel.Transform(testDataset);
+            IDataView predictionsDataView = trainedModel.Transform(testDataset);
 
-            var metrics = mlContext.MulticlassClassification.Evaluate(predictionsDataView, labelColumnName: "LabelAsKey", predictedLabelColumnName: "PredictedLabel");
+            Microsoft.ML.Data.MulticlassClassificationMetrics metrics = mlContext.MulticlassClassification.Evaluate(predictionsDataView, labelColumnName: "LabelAsKey", predictedLabelColumnName: "PredictedLabel");
             ConsoleHelper.PrintMultiClassClassificationMetrics("TensorFlow DNN Transfer Learning", metrics);
 
             watch.Stop();
-            var elapsed2Ms = watch.ElapsedMilliseconds;
+            long elapsed2Ms = watch.ElapsedMilliseconds;
 
             Console.WriteLine($"Predicting and Evaluation took: {elapsed2Ms / 1000} seconds");
         }
@@ -151,15 +168,15 @@ namespace ImageClassification.Train
         private static void TrySinglePrediction(string imagesFolderPathForPredictions, MLContext mlContext, ITransformer trainedModel)
         {
             // Create prediction function to try one prediction
-            var predictionEngine = mlContext.Model
+            PredictionEngine<InMemoryImageData, ImagePrediction> predictionEngine = mlContext.Model
                 .CreatePredictionEngine<InMemoryImageData, ImagePrediction>(trainedModel);
 
-            var testImages = FileUtils.LoadInMemoryImagesFromDirectory(
+            IEnumerable<InMemoryImageData> testImages = FileUtils.LoadInMemoryImagesFromDirectory(
                 imagesFolderPathForPredictions, false);
 
-            foreach (var imageToPredict in testImages)
+            foreach (InMemoryImageData imageToPredict in testImages)
             {
-                var prediction = predictionEngine.Predict(imageToPredict);
+                ImagePrediction prediction = predictionEngine.Predict(imageToPredict);
 
                 Console.WriteLine(
                     $"Image Filename : [{imageToPredict.ImageFileName}], " +
@@ -186,7 +203,7 @@ namespace ImageClassification.Train
 
             //SINGLE SMALL FLOWERS IMAGESET (200 files)
             const string fileName = "flower_photos_small_set.zip";
-            var url = $"https://mlnetfilestorage.file.core.windows.net/imagesets/flower_images/flower_photos_small_set.zip?st=2019-08-07T21%3A27%3A44Z&se=2030-08-08T21%3A27%3A00Z&sp=rl&sv=2018-03-28&sr=f&sig=SZ0UBX47pXD0F1rmrOM%2BfcwbPVob8hlgFtIlN89micM%3D";
+            string url = $"https://mlnetfilestorage.file.core.windows.net/imagesets/flower_images/flower_photos_small_set.zip?st=2019-08-07T21%3A27%3A44Z&se=2030-08-08T21%3A27%3A00Z&sp=rl&sv=2018-03-28&sr=f&sig=SZ0UBX47pXD0F1rmrOM%2BfcwbPVob8hlgFtIlN89micM%3D";
             Web.Download(url, imagesDownloadFolder, fileName);
             Compress.UnZip(Path.Join(imagesDownloadFolder, fileName), imagesDownloadFolder);
 
@@ -204,9 +221,9 @@ namespace ImageClassification.Train
 
         public static void ConsoleWriteImagePrediction(string ImagePath, string Label, string PredictedLabel, float Probability)
         {
-            var defaultForeground = Console.ForegroundColor;
-            var labelColor = ConsoleColor.Magenta;
-            var probColor = ConsoleColor.Blue;
+            ConsoleColor defaultForeground = Console.ForegroundColor;
+            ConsoleColor labelColor = ConsoleColor.Magenta;
+            ConsoleColor probColor = ConsoleColor.Blue;
 
             Console.Write("Image File: ");
             Console.ForegroundColor = labelColor;

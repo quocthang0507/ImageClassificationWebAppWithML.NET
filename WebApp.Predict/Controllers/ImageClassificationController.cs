@@ -43,7 +43,7 @@ namespace TensorFlowImageClassification.Controllers
             if (imageFile.Length == 0)
                 return BadRequest();
 
-            var imageMemoryStream = new MemoryStream();
+            MemoryStream imageMemoryStream = new MemoryStream();
             await imageFile.CopyToAsync(imageMemoryStream);
 
             // Check that the image is valid.
@@ -51,8 +51,8 @@ namespace TensorFlowImageClassification.Controllers
             if (!imageData.IsValidImage())
                 return StatusCode(StatusCodes.Status415UnsupportedMediaType);
 
-            var ext = ImageValidationExtensions.GetImageFormat(imageData) == ImageValidationExtensions.ImageFormat.jpeg ? ".jpg" : ".png";
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\img", Path.GetRandomFileName().Split('.')[0] + ext);
+            string ext = ImageValidationExtensions.GetImageFormat(imageData) == ImageValidationExtensions.ImageFormat.jpeg ? ".jpg" : ".png";
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\img", Path.GetRandomFileName().Split('.')[0] + ext);
             /*
             using (var stream = System.IO.File.Create(filePath))
             {
@@ -68,21 +68,21 @@ namespace TensorFlowImageClassification.Controllers
             _logger.LogInformation("Start processing image...");
 
             // Measure execution time.
-            var watch = System.Diagnostics.Stopwatch.StartNew();
+            System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
 
             // Set the specific image data into the ImageInputData type used in the DataView.
-            var imageInputData = new InMemoryImageData(image: imageData, label: null, imageFileName: null);
+            InMemoryImageData imageInputData = new InMemoryImageData(image: imageData, label: null, imageFileName: null);
 
             // Predict code for provided image.
-            var prediction = _predictionEnginePool.Predict(imageInputData);
+            ImagePrediction prediction = _predictionEnginePool.Predict(imageInputData);
 
             // Stop measuring time.
             watch.Stop();
-            var elapsedMs = watch.ElapsedMilliseconds;
+            long elapsedMs = watch.ElapsedMilliseconds;
             _logger.LogInformation($"Image processed in {elapsedMs} miliseconds");
 
             // Predict the image's label (The one with highest probability).
-            var imageBestLabelPrediction =
+            ImagePredictedLabelWithProbability imageBestLabelPrediction =
                 new ImagePredictedLabelWithProbability
                 {
                     PredictedLabel = prediction.PredictedLabel,

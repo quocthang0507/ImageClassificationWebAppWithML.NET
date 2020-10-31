@@ -15,59 +15,59 @@ namespace ImageClassification.Predict
             Console.OutputEncoding = Encoding.UTF8;
 
             const string assetsRelativePath = @"../../../assets";
-            var assetsPath = GetAbsolutePath(assetsRelativePath);
+            string assetsPath = GetAbsolutePath(assetsRelativePath);
             // Please copy the ML Model in Train Project to here and change below paths
-            var imagesFolderPathForPredictions = Path.Combine(assetsPath, "inputs", "predictions");
+            string imagesFolderPathForPredictions = Path.Combine(assetsPath, "inputs", "predictions");
 
-            var imageClassifierModelZipFilePath = Path.Combine(assetsPath, "inputs", "model", "imageClassifier.zip");
+            string imageClassifierModelZipFilePath = Path.Combine(assetsPath, "inputs", "model", "imageClassifier.zip");
 
             try
             {
-                var mlContext = new MLContext(seed: 1);
+                MLContext mlContext = new MLContext(seed: 1);
 
                 Console.WriteLine($"Loading model from: {imageClassifierModelZipFilePath}");
 
                 // Load the model
-                var loadedModel = mlContext.Model.Load(imageClassifierModelZipFilePath, out var modelInputSchema);
+                ITransformer loadedModel = mlContext.Model.Load(imageClassifierModelZipFilePath, out DataViewSchema modelInputSchema);
 
                 // Create prediction engine to try a single prediction (input = ImageData, output = ImagePrediction)
-                var predictionEngine = mlContext.Model.CreatePredictionEngine<InMemoryImageData, ImagePrediction>(loadedModel);
+                PredictionEngine<InMemoryImageData, ImagePrediction> predictionEngine = mlContext.Model.CreatePredictionEngine<InMemoryImageData, ImagePrediction>(loadedModel);
 
                 //Predict the first image in the folder
-                var imagesToPredict = FileUtils.LoadInMemoryImagesFromDirectory(imagesFolderPathForPredictions, false);
+                System.Collections.Generic.IEnumerable<InMemoryImageData> imagesToPredict = FileUtils.LoadInMemoryImagesFromDirectory(imagesFolderPathForPredictions, false);
 
-                var imageToPredict = imagesToPredict.First();
+                InMemoryImageData imageToPredict = imagesToPredict.First();
 
                 // Measure #1 prediction execution time.
-                var watch = System.Diagnostics.Stopwatch.StartNew();
+                System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
 
-                var prediction = predictionEngine.Predict(imageToPredict);
+                ImagePrediction prediction = predictionEngine.Predict(imageToPredict);
 
                 // Stop measuring time.
                 watch.Stop();
-                var elapsedMs = watch.ElapsedMilliseconds;
+                long elapsedMs = watch.ElapsedMilliseconds;
                 Console.WriteLine("First Prediction took: " + elapsedMs + "mlSecs");
 
                 // Measure #2 prediction execution time.
-                var watch2 = System.Diagnostics.Stopwatch.StartNew();
+                System.Diagnostics.Stopwatch watch2 = System.Diagnostics.Stopwatch.StartNew();
 
-                var prediction2 = predictionEngine.Predict(imageToPredict);
+                ImagePrediction prediction2 = predictionEngine.Predict(imageToPredict);
 
                 // Stop measuring time.
                 watch2.Stop();
-                var elapsedMs2 = watch2.ElapsedMilliseconds;
+                long elapsedMs2 = watch2.ElapsedMilliseconds;
                 Console.WriteLine("Second Prediction took: " + elapsedMs2 + "mlSecs");
 
                 // Get the highest score and its index
-                var maxScore = prediction.Score.Max();
+                float maxScore = prediction.Score.Max();
 
                 ////////
                 // Double-check using the index
-                var maxIndex = prediction.Score.ToList().IndexOf(maxScore);
+                int maxIndex = prediction.Score.ToList().IndexOf(maxScore);
                 VBuffer<ReadOnlyMemory<char>> keys = default;
                 predictionEngine.OutputSchema[3].GetKeyValues(ref keys);
-                var keysArray = keys.DenseValues().ToArray();
-                var predictedLabelString = keysArray[maxIndex];
+                ReadOnlyMemory<char>[] keysArray = keys.DenseValues().ToArray();
+                ReadOnlyMemory<char> predictedLabelString = keysArray[maxIndex];
                 ////////
 
                 Console.WriteLine($"Image Filename : [{imageToPredict.ImageFileName}], " +
@@ -80,9 +80,9 @@ namespace ImageClassification.Predict
                 Console.WriteLine("");
                 Console.WriteLine("Predicting several images...");
 
-                foreach (var currentImageToPredict in imagesToPredict)
+                foreach (InMemoryImageData currentImageToPredict in imagesToPredict)
                 {
-                    var currentPrediction = predictionEngine.Predict(currentImageToPredict);
+                    ImagePrediction currentPrediction = predictionEngine.Predict(currentImageToPredict);
 
                     Console.WriteLine(
                         $"Image Filename : [{currentImageToPredict.ImageFileName}], " +
