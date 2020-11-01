@@ -1,7 +1,9 @@
 ﻿using Common;
 using ImageClassification.DataModels;
+using ImageClassification.Train.DataModels;
 using Microsoft.ML;
 using Microsoft.ML.Data;
+using Microsoft.ML.Transforms;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,6 +11,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using static Microsoft.ML.Transforms.ValueToKeyMappingEstimator;
 
@@ -38,18 +41,31 @@ namespace ImageClassification.Train
 
             // 3. Load Images with in-memory type within the IDataView and Transform Labels to Keys (Categorical)
 
+            Action<InputData, OutputData> mapping =
+                (input, output) => output.Image = input.Image1;
+
+            //IDataView shuffledFullImagesDataset = mlContext.Transforms.LoadImages(
+            //                                    outputColumnName: "RawImage",
+            //                                    imageFolder: fullImagesetFolderPath,
+            //                                    inputColumnName: "ImagePath")
+            //    .Append(mlContext.Transforms.ResizeImages(
+            //                                    outputColumnName: "ResizedImage",
+            //                                    299,
+            //                                    299,
+            //                                    inputColumnName: "RawImage"))
+            //    .Append(mlContext.Transforms.ConvertToGrayscale("GrayImage", "ResizedImage"))
+            //    .Append(mlContext.Transforms.Conversion.MapValueToKey(outputColumnName: "LabelAsKey", inputColumnName: "Label", keyOrdinality: KeyOrdinality.ByValue))
+            //    .Append(mlContext.Transforms.ExtractPixels(outputColumnName: "Image1", inputColumnName: "GrayImage", outputAsFloatArray: false))
+            //    .Append(mlContext.Transforms.CustomMapping(mapping, null))
+            //    .Fit(shuffledFullImageFilePathsDataset)
+            //    .Transform(shuffledFullImageFilePathsDataset);
+
             IDataView shuffledFullImagesDataset = mlContext.Transforms.Conversion
                 .MapValueToKey(outputColumnName: "LabelAsKey", inputColumnName: "Label", keyOrdinality: KeyOrdinality.ByValue)
-                .Append(mlContext.Transforms.LoadImages(
+                .Append(mlContext.Transforms.LoadRawImageBytes(
                                                 outputColumnName: "Image",
                                                 imageFolder: fullImagesetFolderPath,
                                                 inputColumnName: "ImagePath"))
-                .Append(mlContext.Transforms.ResizeImages(
-                                                outputColumnName: "Image",
-                                                299,
-                                                299,
-                                                inputColumnName: "Image"))
-                .Append(mlContext.Transforms.ConvertToGrayscale("Image", "Image"))
                 .Fit(shuffledFullImageFilePathsDataset)
                 .Transform(shuffledFullImageFilePathsDataset);
 
@@ -62,8 +78,8 @@ namespace ImageClassification.Train
 
             // 5. Define the model's training pipeline using DNN default values
             //
-            Microsoft.ML.Data.EstimatorChain<Microsoft.ML.Transforms.KeyToValueMappingTransformer> pipeline = mlContext.MulticlassClassification.Trainers
-                    .ImageClassification(featureColumnName: "Image",
+            EstimatorChain<KeyToValueMappingTransformer> pipeline = mlContext.MulticlassClassification.Trainers
+                .ImageClassification(featureColumnName: "Image",
                                          labelColumnName: "LabelAsKey",
                                          validationSet: testDataView)
                 .Append(mlContext.Transforms.Conversion.MapKeyToValue(outputColumnName: "PredictedLabel",
@@ -132,6 +148,22 @@ namespace ImageClassification.Train
             return rows;
         }
 
+        private static IEnumerable<Vector<Byte>> UpdateImageColumnToVectorColumn(MLContext mlContext, IDataView idv, string imageColName)
+        {
+            var images = idv.GetColumn<Bitmap>(imageColName);
+            IEnumerable<Vector<Byte>> column = images.Select(image => new Vector<Byte>(ConvertImageToByteArray(image)));
+            return column;
+        }
+
+        private static byte[] ConvertImageToByteArray(Bitmap image)
+        {
+            using (MemoryStream mStream = new MemoryStream())
+            {
+                image.Save(mStream, image.RawFormat);
+                return mStream.ToArray();
+            }
+        }
+
         private static void DownloadDataset(out string outputMlNetModelFilePath, out string imagesFolderPathForPredictions, out string fullImagesetFolderPath)
         {
             const string assetsRelativePath = @"../../../assets";
@@ -148,9 +180,9 @@ namespace ImageClassification.Train
 
         private static void UseLocalDataset(out string outputMlNetModelFilePath, out string imagesFolderPathForPredictions, out string fullImagesetFolderPath)
         {
-            const string assetsRelativePath = @"../../../custom-assets";
+            const string assetsRelativePath = @"../../../assets";
             string assetsPath = GetAbsolutePath(assetsRelativePath);
-            outputMlNetModelFilePath = Path.Combine(assetsPath, "outputs", "imageClassifier.zip");
+            outputMlNetModelFilePath = Path.Combine(assetsPath, "outputs", "imageClassifier_New.zip");
             imagesFolderPathForPredictions = Path.Combine(assetsPath, "inputs", "predictions");
             fullImagesetFolderPath = Path.Combine(assetsPath, "inputs", "img");
         }
