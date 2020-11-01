@@ -1,10 +1,12 @@
 ﻿using Common;
 using ImageClassification.DataModels;
 using Microsoft.ML;
+using Microsoft.ML.Data;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,7 +25,7 @@ namespace ImageClassification.Train
             //DownloadDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
             UseLocalDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
 
-            MLContext mlContext = new MLContext(seed: 1);
+            MLContext mlContext = new MLContext(seed: null);
 
             // Specify MLContext Filter to only show feedback log/traces about ImageClassification
             // This is not needed for feedback output if using the explicit MetricsCallback parameter
@@ -35,16 +37,23 @@ namespace ImageClassification.Train
             IDataView shuffledFullImageFilePathsDataset = mlContext.Data.ShuffleRows(fullImagesDataset);
 
             // 3. Load Images with in-memory type within the IDataView and Transform Labels to Keys (Categorical)
-            IDataView shuffledFullImagesDataset = mlContext.Transforms.Conversion.
-                    MapValueToKey(outputColumnName: "LabelAsKey", inputColumnName: "Label", keyOrdinality: KeyOrdinality.ByValue)
-                .Append(mlContext.Transforms.LoadRawImageBytes(
+
+            IDataView shuffledFullImagesDataset = mlContext.Transforms.Conversion
+                .MapValueToKey(outputColumnName: "LabelAsKey", inputColumnName: "Label", keyOrdinality: KeyOrdinality.ByValue)
+                .Append(mlContext.Transforms.LoadImages(
                                                 outputColumnName: "Image",
                                                 imageFolder: fullImagesetFolderPath,
                                                 inputColumnName: "ImagePath"))
+                .Append(mlContext.Transforms.ResizeImages(
+                                                outputColumnName: "Image",
+                                                299,
+                                                299,
+                                                inputColumnName: "Image"))
+                .Append(mlContext.Transforms.ConvertToGrayscale("Image", "Image"))
                 .Fit(shuffledFullImageFilePathsDataset)
                 .Transform(shuffledFullImageFilePathsDataset);
 
-            int size = GetSizeIDataView(shuffledFullImagesDataset);
+            int size = GetSizeIDataView(shuffledFullImagesDataset); //1725
 
             // 4. Split the data 80:20 into train and test sets, train and evaluate.
             DataOperationsCatalog.TrainTestData trainTestData = mlContext.Data.TrainTestSplit(shuffledFullImagesDataset, testFraction: 0.2);
