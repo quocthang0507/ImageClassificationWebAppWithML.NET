@@ -1,7 +1,6 @@
 ﻿using Microsoft.ML.Data;
 using System;
 using System.Drawing;
-using System.Numerics;
 
 namespace ImageClassification.Train.DataModels
 {
@@ -17,5 +16,19 @@ namespace ImageClassification.Train.DataModels
         // THE MAGICAL FIX: attribute specifies vector type of unknown length (i.e. VarVector)
         [VectorType()]
         public VBuffer<Byte> Image; // the VBuffer<> type actually represents the data
+    }
+
+    class IDataViewClass
+    {
+        public string ImagePath { get; set; }
+        public string Label { get; set; }
+        public VBuffer<Byte> Image { get; set; }
+    }
+
+    class IDataViewClass2
+    {
+        public string ImagePath { get; set; }
+        public string Label { get; set; }
+        public Image GrayImage { get; set; }
     }
 }
