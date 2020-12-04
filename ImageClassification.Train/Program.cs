@@ -1,6 +1,5 @@
 ﻿using Common;
 using ImageClassification.DataModels;
-using ImageClassification.Train.DataModels;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Transforms;
@@ -37,7 +36,8 @@ namespace ImageClassification.Train
             // This is not needed for feedback output if using the explicit MetricsCallback parameter
             mlContext.Log += FilterMLContextLog;
 
-            PrepareDataset();
+            //PrepareDataset();
+            TryApplyGrayScale();
 
             var pipeline = CreatePipeline();
 
@@ -168,18 +168,6 @@ namespace ImageClassification.Train
             return rows;
         }
 
-        private static void PrintEnumerableAsTable(IEnumerable<IDataViewClass> @enum)
-        {
-            var list = @enum.ToList();
-            StringBuilder sb = new StringBuilder("\n");
-            foreach (var item in list)
-            {
-                sb.Append(item.Label + "\t");
-                sb.AppendLine(item.Image.ToString());
-            }
-            Console.WriteLine(sb.ToString());
-        }
-
         private static bool ByteArrayToFile(string fileName, byte[] byteArray)
         {
             try
@@ -274,9 +262,13 @@ namespace ImageClassification.Train
             }
         }
 
-        public static IEnumerable<ImageData> LoadImagesFromDirectory(string folder, bool useFolderNameAsLabel = true)
+        private static IEnumerable<ImageData> LoadImagesFromDirectory(string folder, bool useFolderNameAsLabel = true)
             => FileUtils.LoadImagesFromDirectory(folder, useFolderNameAsLabel)
                 .Select(x => new ImageData(x.imagePath, x.label));
+
+        private static IEnumerable<ImageData2> LoadImagesFromDirectory2(string folder, bool useFolderNameAsLabel = true)
+            => FileUtils.LoadImagesFromDirectory(folder, useFolderNameAsLabel)
+                .Select(x => new ImageData2(x.imagePath, x.label));
 
         /// <summary>
         /// Download dataset and return file name
@@ -340,10 +332,10 @@ namespace ImageClassification.Train
 
         private static void TryApplyGrayScale()
         {
-            IEnumerable<ImageData> images = LoadImagesFromDirectory(folder: fullImagesetFolderPath, useFolderNameAsLabel: true);
+            IEnumerable<ImageData2> images = LoadImagesFromDirectory2(folder: fullImagesetFolderPath, useFolderNameAsLabel: true);
             IDataView data = mlContext.Data.LoadFromEnumerable(images);
             // Image loading pipeline. 
-            var pipeline = mlContext.Transforms.ConvertToGrayscale("Grayscale", "ImagePath"));
+            var pipeline = mlContext.Transforms.ConvertToGrayscale("GrayImage", "Image");
 
             var transformedData = pipeline.Fit(data).Transform(data);
 
