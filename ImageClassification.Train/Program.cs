@@ -20,21 +20,57 @@ namespace ImageClassification.Train
 {
     internal class Program
     {
+        private static string outputMlNetModelFilePath, imagesFolderPathForPredictions, fullImagesetFolderPath;
+        private static IDataView trainDataView, testDataView;
+        private static MLContext mlContext;
+
         static void Main()
         {
             Console.OutputEncoding = Encoding.UTF8;
 
-            string outputMlNetModelFilePath, imagesFolderPathForPredictions, fullImagesetFolderPath;
-
             //DownloadDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
             UseLocalDataset(out outputMlNetModelFilePath, out imagesFolderPathForPredictions, out fullImagesetFolderPath);
 
-            MLContext mlContext = new MLContext(seed: null);
+            mlContext = new MLContext(seed: null);
 
             // Specify MLContext Filter to only show feedback log/traces about ImageClassification
             // This is not needed for feedback output if using the explicit MetricsCallback parameter
             mlContext.Log += FilterMLContextLog;
 
+            PrepareDataset();
+
+            var pipeline = CreatePipeline();
+
+            // 6. Train/create the ML model
+            Console.WriteLine("*** Training the image classification model with DNN Transfer Learning on top of the selected pre-trained model/architecture ***");
+
+            // Measuring training time
+            Stopwatch watch = Stopwatch.StartNew();
+
+            //Train
+            ITransformer trainedModel = pipeline.Fit(trainDataView);
+
+            watch.Stop();
+            long elapsedMs = watch.ElapsedMilliseconds;
+
+            Console.WriteLine($"Training with transfer learning took: {elapsedMs / 1000} seconds");
+
+            // 7. Get the quality metrics (accuracy, etc.)
+            EvaluateModel(mlContext, testDataView, trainedModel);
+
+            // 8. Save the model to assets/outputs (You get ML.NET .zip model file and TensorFlow .pb model file)
+            mlContext.Model.Save(trainedModel, trainDataView.Schema, outputMlNetModelFilePath);
+            Console.WriteLine($"Model saved to: {outputMlNetModelFilePath}");
+
+            // 9. Try a single prediction simulating an end-user app
+            TrySinglePrediction(imagesFolderPathForPredictions, mlContext, trainedModel);
+
+            Console.WriteLine("Press any key to finish");
+            Console.ReadKey();
+        }
+
+        private static void PrepareDataset()
+        {
             // 2. Load the initial full image-set into an IDataView and shuffle so it'll be better balanced
             IEnumerable<ImageData> images = LoadImagesFromDirectory(folder: fullImagesetFolderPath, useFolderNameAsLabel: true);
             IDataView fullImagesDataset = mlContext.Data.LoadFromEnumerable(images);
@@ -80,9 +116,12 @@ namespace ImageClassification.Train
 
             // 4. Split the data 80:20 into train and test sets, train and evaluate.
             TrainTestData trainTestData = mlContext.Data.TrainTestSplit(shuffledFullImagesDataset, testFraction: 0.2);
-            IDataView trainDataView = trainTestData.TrainSet;
-            IDataView testDataView = trainTestData.TestSet;
+            trainDataView = trainTestData.TrainSet;
+            testDataView = trainTestData.TestSet;
+        }
 
+        private static EstimatorChain<KeyToValueMappingTransformer> CreatePipeline()
+        {
             // 5. Define the model's training pipeline using DNN default values
             //
             EstimatorChain<KeyToValueMappingTransformer> pipeline = mlContext.MulticlassClassification.Trainers
@@ -112,33 +151,7 @@ namespace ImageClassification.Train
             //        .Append(mlContext.Transforms.Conversion.MapKeyToValue(
             //            outputColumnName: "PredictedLabel",
             //            inputColumnName: "PredictedLabel"));
-
-            // 6. Train/create the ML model
-            Console.WriteLine("*** Training the image classification model with DNN Transfer Learning on top of the selected pre-trained model/architecture ***");
-
-            // Measuring training time
-            Stopwatch watch = Stopwatch.StartNew();
-
-            //Train
-            ITransformer trainedModel = pipeline.Fit(trainDataView);
-
-            watch.Stop();
-            long elapsedMs = watch.ElapsedMilliseconds;
-
-            Console.WriteLine($"Training with transfer learning took: {elapsedMs / 1000} seconds");
-
-            // 7. Get the quality metrics (accuracy, etc.)
-            EvaluateModel(mlContext, testDataView, trainedModel);
-
-            // 8. Save the model to assets/outputs (You get ML.NET .zip model file and TensorFlow .pb model file)
-            mlContext.Model.Save(trainedModel, trainDataView.Schema, outputMlNetModelFilePath);
-            Console.WriteLine($"Model saved to: {outputMlNetModelFilePath}");
-
-            // 9. Try a single prediction simulating an end-user app
-            TrySinglePrediction(imagesFolderPathForPredictions, mlContext, trainedModel);
-
-            Console.WriteLine("Press any key to finish");
-            Console.ReadKey();
+            return pipeline;
         }
 
         private static int GetSizeIDataView(IDataView idv)
@@ -165,16 +178,6 @@ namespace ImageClassification.Train
                 sb.AppendLine(item.Image.ToString());
             }
             Console.WriteLine(sb.ToString());
-        }
-
-        private static void SaveToFiles(IEnumerable<IDataViewClass2> @enum, string prefix = null)
-        {
-            var list = @enum.ToList();
-            foreach (var item in list)
-            {
-                string folderPath = Directory.GetParent(item.ImagePath).FullName;
-                item.GrayImage.Save(Path.Combine(folderPath, prefix + Path.GetFileName(item.ImagePath)));
-            }
         }
 
         private static bool ByteArrayToFile(string fileName, byte[] byteArray)
@@ -233,7 +236,6 @@ namespace ImageClassification.Train
             fullImagesetFolderPath = Path.Combine(assetsPath, "inputs", "img");
         }
 
-
         private static void EvaluateModel(MLContext mlContext, IDataView testDataset, ITransformer trainedModel)
         {
             Console.WriteLine("Making predictions in bulk for evaluating model's quality...");
@@ -272,10 +274,7 @@ namespace ImageClassification.Train
             }
         }
 
-
-        public static IEnumerable<ImageData> LoadImagesFromDirectory(
-            string folder,
-            bool useFolderNameAsLabel = true)
+        public static IEnumerable<ImageData> LoadImagesFromDirectory(string folder, bool useFolderNameAsLabel = true)
             => FileUtils.LoadImagesFromDirectory(folder, useFolderNameAsLabel)
                 .Select(x => new ImageData(x.imagePath, x.label));
 
@@ -337,6 +336,26 @@ namespace ImageClassification.Train
             {
                 Console.WriteLine(e.Message);
             }
+        }
+
+        private static void TryApplyGrayScale()
+        {
+            IEnumerable<ImageData> images = LoadImagesFromDirectory(folder: fullImagesetFolderPath, useFolderNameAsLabel: true);
+            IDataView data = mlContext.Data.LoadFromEnumerable(images);
+            // Image loading pipeline. 
+            var pipeline = mlContext.Transforms.ConvertToGrayscale("Grayscale", "ImagePath"));
+
+            var transformedData = pipeline.Fit(data).Transform(data);
+
+            var shuffledFullImagesDataset = mlContext.Transforms.Conversion
+                .MapValueToKey(outputColumnName: "LabelAsKey", inputColumnName: "Label", keyOrdinality: KeyOrdinality.ByValue)
+                .Fit(transformedData)
+                .Transform(transformedData);
+
+            // 4. Split the data 80:20 into train and test sets, train and evaluate.
+            TrainTestData trainTestData = mlContext.Data.TrainTestSplit(shuffledFullImagesDataset, testFraction: 0.2);
+            trainDataView = trainTestData.TrainSet;
+            testDataView = trainTestData.TestSet;
         }
     }
 }
