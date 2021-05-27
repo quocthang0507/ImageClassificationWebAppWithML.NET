@@ -36,8 +36,7 @@ namespace ImageClassification.Train
             // This is not needed for feedback output if using the explicit MetricsCallback parameter
             mlContext.Log += FilterMLContextLog;
 
-            //PrepareDataset();
-            TryApplyGrayScale();
+            PrepareDataset();
 
             var pipeline = CreatePipeline();
 
@@ -328,26 +327,6 @@ namespace ImageClassification.Train
             {
                 Console.WriteLine(e.Message);
             }
-        }
-
-        private static void TryApplyGrayScale()
-        {
-            IEnumerable<ImageData2> images = LoadImagesFromDirectory2(folder: fullImagesetFolderPath, useFolderNameAsLabel: true);
-            IDataView data = mlContext.Data.LoadFromEnumerable(images);
-            // Image loading pipeline. 
-            var pipeline = mlContext.Transforms.ConvertToGrayscale("GrayImage", "Image");
-
-            var transformedData = pipeline.Fit(data).Transform(data);
-
-            var shuffledFullImagesDataset = mlContext.Transforms.Conversion
-                .MapValueToKey(outputColumnName: "LabelAsKey", inputColumnName: "Label", keyOrdinality: KeyOrdinality.ByValue)
-                .Fit(transformedData)
-                .Transform(transformedData);
-
-            // 4. Split the data 80:20 into train and test sets, train and evaluate.
-            TrainTestData trainTestData = mlContext.Data.TrainTestSplit(shuffledFullImagesDataset, testFraction: 0.2);
-            trainDataView = trainTestData.TrainSet;
-            testDataView = trainTestData.TestSet;
         }
     }
 }
